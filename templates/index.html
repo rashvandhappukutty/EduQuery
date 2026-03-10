@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EduQuery — AI Student Enquiry</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800;900&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
+</head>
+
+<body>
+
+  <!-- Aurora depth layer -->
+  <div class="aurora-extra"></div>
+
+  <!-- ===================== HEADER ===================== -->
+  <header class="site-header">
+    <div class="header-inner">
+
+      <div class="logo">
+        <div class="logo-icon">🎓</div>
+        <div class="logo-wordmark">
+          <span class="logo-name">Edu<span class="q">Query</span></span>
+          <span class="logo-sub">AI Student Assistant</span>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div class="status-badge">
+          <span class="status-dot"></span>
+          <span class="status-label">AI Online · Web Search Active</span>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ===================== MAIN LAYOUT ===================== -->
+  <div class="app-layout">
+
+    <!-- ---- LEFT SIDEBAR ---- -->
+    <aside class="sidebar">
+
+      <section class="sidebar-section">
+        <h3 class="sidebar-title">Quick Questions</h3>
+        <button class="quick-btn" onclick="sendQuick('What are the admission requirements?')">
+          <span class="btn-icon">📋</span> Admission Requirements
+        </button>
+        <button class="quick-btn" onclick="sendQuick('What is the fee structure for engineering courses?')">
+          <span class="btn-icon">💳</span> Fee Structure
+        </button>
+        <button class="quick-btn" onclick="sendQuick('When are semester exams conducted?')">
+          <span class="btn-icon">📅</span> Exam Schedule
+        </button>
+        <button class="quick-btn" onclick="sendQuick('What campus facilities are available?')">
+          <span class="btn-icon">🏫</span> Campus Facilities
+        </button>
+        <button class="quick-btn" onclick="sendQuick('What undergraduate courses are available?')">
+          <span class="btn-icon">📚</span> Available Courses
+        </button>
+        <button class="quick-btn" onclick="sendQuick('Tell me about VIT Vellore')">
+          <span class="btn-icon">🔍</span> Search a College
+        </button>
+      </section>
+
+      <section class="sidebar-section">
+        <h3 class="sidebar-title">Query Categories</h3>
+        <div class="cat-list">
+          <div class="cat-pill admissions">🎯 Admissions</div>
+          <div class="cat-pill fees">💰 Fees &amp; Finance</div>
+          <div class="cat-pill exams">📝 Exams &amp; Results</div>
+          <div class="cat-pill campus">🏛️ Campus Life</div>
+          <div class="cat-pill courses">📖 Courses</div>
+          <div class="cat-pill placements">🏆 Placements</div>
+        </div>
+      </section>
+
+      <div class="tip-box">
+        <strong>🌐 Live Web Search</strong>
+        Ask about any real college — I'll fetch live data from the official website to answer your question accurately.
+      </div>
+
+    </aside>
+
+    <!-- ---- CHAT AREA ---- -->
+    <main class="chat-main">
+
+      <div class="messages-window" id="messagesWindow">
+
+        <!-- Welcome screen -->
+        <div class="welcome-screen" id="welcomeScreen">
+          <div class="welcome-glyph">🎓</div>
+          <h1>Ask Me <em>Anything</em></h1>
+          <p>Your AI-powered student enquiry assistant. Ask about admissions, fees, exams, courses, campus life — or
+            search any college in real time.</p>
+          <div class="suggestion-chips">
+            <button class="chip" onclick="sendQuick('How do I apply for college admission?')">How to apply?</button>
+            <button class="chip" onclick="sendQuick('Tell me about IIT Madras')">IIT Madras</button>
+            <button class="chip" onclick="sendQuick('What scholarships are available?')">Scholarships</button>
+            <button class="chip" onclick="sendQuick('Hostel facilities for students?')">Hostel info</button>
+            <button class="chip" onclick="sendQuick('What is NEET eligibility criteria?')">NEET eligibility</button>
+            <button class="chip" onclick="sendQuick('Tell me about VIT Vellore placements')">VIT Placements</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Input area -->
+      <div class="input-area">
+        <div class="input-box">
+          <textarea id="userInput" placeholder="Ask about admissions, fees, exams, or any college..." rows="1"
+            onkeydown="handleKeyDown(event)" oninput="autoGrow(this)"></textarea>
+          <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send message">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+              stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </div>
+        <div class="input-footer">
+          <span class="input-hint">↵ Enter to send · ⇧ Shift+Enter for new line</span>
+          <button class="clear-btn" onclick="clearChat()">✕ Clear chat</button>
+        </div>
+      </div>
+
+    </main>
+
+  </div>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>
