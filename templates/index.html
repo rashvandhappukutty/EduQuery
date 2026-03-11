@@ -21,10 +21,10 @@
     <div class="header-inner">
 
       <div class="logo">
-        <div class="logo-icon">🎓</div>
+        <div class="logo-icon">🌐</div>
         <div class="logo-wordmark">
           <span class="logo-name">Edu<span class="q">Query</span></span>
-          <span class="logo-sub">AI Student Assistant</span>
+          <span class="logo-sub">Universal AI Student Assistant</span>
         </div>
       </div>
 
@@ -45,24 +45,31 @@
     <aside class="sidebar">
 
       <section class="sidebar-section">
+        <h3 class="sidebar-title">Navigation</h3>
+        <button class="quick-btn home-btn" onclick="clearChat()">
+          <span class="btn-icon">🏠</span> Home
+        </button>
+      </section>
+
+      <section class="sidebar-section">
         <h3 class="sidebar-title">Quick Questions</h3>
         <button class="quick-btn" onclick="sendQuick('What are the admission requirements?')">
-          <span class="btn-icon">📋</span> Admission Requirements
+          <span class="btn-icon">📋</span> Admission Info
         </button>
-        <button class="quick-btn" onclick="sendQuick('What is the fee structure for engineering courses?')">
-          <span class="btn-icon">💳</span> Fee Structure
+        <button class="quick-btn" onclick="sendQuick('What is the fee structure for engineering?')">
+          <span class="btn-icon">💰</span> Fee Details
         </button>
-        <button class="quick-btn" onclick="sendQuick('When are semester exams conducted?')">
-          <span class="btn-icon">📅</span> Exam Schedule
+        <button class="quick-btn" onclick="sendQuick('Tell me about campus facilities.')">
+          <span class="btn-icon">🏫</span> Facilities
         </button>
-        <button class="quick-btn" onclick="sendQuick('What campus facilities are available?')">
-          <span class="btn-icon">🏫</span> Campus Facilities
+        <button class="quick-btn" onclick="sendQuick('When do semester exams happen?')">
+          <span class="btn-icon">📅</span> Exams
         </button>
-        <button class="quick-btn" onclick="sendQuick('What undergraduate courses are available?')">
-          <span class="btn-icon">📚</span> Available Courses
+        <button class="quick-btn" onclick="sendQuick('What placement records does this college have?')">
+          <span class="btn-icon">🏆</span> Placements
         </button>
-        <button class="quick-btn" onclick="sendQuick('Tell me about VIT Vellore')">
-          <span class="btn-icon">🔍</span> Search a College
+        <button class="quick-btn" onclick="sendQuick('Tell me about any college...')">
+          <span class="btn-icon">🔍</span> Search Any College
         </button>
       </section>
 
@@ -78,10 +85,6 @@
         </div>
       </section>
 
-      <div class="tip-box">
-        <strong>🌐 Live Web Search</strong>
-        Ask about any real college — I'll fetch live data from the official website to answer your question accurately.
-      </div>
 
     </aside>
 

@@ -137,13 +137,13 @@ function appendBubble(role, text, category = "general", college = null, webSourc
     bubbleWrap.appendChild(link);
   }
 
-  // --- Assemble ---
+  // Assemble
   msgDiv.appendChild(avatar);
   msgDiv.appendChild(bubbleWrap);
   messagesWindow.appendChild(msgDiv);
 
-  // Scroll to bottom
-  scrollToBottom();
+  // Smooth scroll to bottom after a tiny delay for rendering
+  setTimeout(scrollToBottom, 50);
 }
 
 
@@ -179,7 +179,7 @@ function showTyping() {
   msgDiv.appendChild(bubbleWrap);
 
   messagesWindow.appendChild(msgDiv);
-  scrollToBottom();
+  setTimeout(scrollToBottom, 50);
 
   return id;
 }

@@ -134,43 +134,68 @@ def classify_category(message: str) -> str:
     return max(scores, key=scores.get)
 
 
+def analyze_question_with_ai(message: str) -> dict:
+    """
+    Uses the AI API to intelligently detect the college name and intent.
+    Returns: {"college": str or None, "intent": str}
+    """
+    if not GROQ_API_KEY:
+        # Fallback to rule-based analysis if no API key
+        return {
+            "college": detect_college_name(message),
+            "intent": classify_category(message)
+        }
+
+    system_prompt = """You are an AI Question Analyzer for 'EduQuery'. 
+Extract the college name and the intent from the student's question.
+Valid intents: Admissions, Courses, Fees, Exams, Facilities, General Information.
+
+Respond ONLY with a JSON object: 
+{"college": "College Name", "intent": "Intent Category"}
+
+If no college is mentioned, set "college" to null.
+If no specific intent is found, set "intent" to "General Information"."""
+
+    try:
+        response_text = call_groq_api(system_prompt, message)
+        # Parse JSON from AI response
+        import json
+        # Handle potential markdown formatting in response
+        clean_json = re.search(r'\{.*\}', response_text, re.DOTALL)
+        if clean_json:
+            result = json.loads(clean_json.group(0))
+            # Standardize intent to lowercase to match existing logic
+            result["intent"] = result.get("intent", "general").lower()
+            return result
+    except Exception as e:
+        print(f"AI Analysis Error: {e}")
+    
+    # Final fallback
+    return {"college": detect_college_name(message), "intent": classify_category(message)}
+
+
 def detect_college_name(message: str) -> str | None:
     """
-    Detects if a college name is mentioned in the user's message.
-    Returns the matched college key or the raw detected name.
+    Rule-based fallback for college name detection.
     """
     message_lower = message.lower()
-
-    # Check against known college map first
     for college_key in sorted(COLLEGE_URL_MAP.keys(), key=len, reverse=True):
         if college_key in message_lower:
             return college_key
-
-    # Hardened Patterns: Require more than just a question word before 'college/campus'
-    stopwords = r'\b(what|how|the|tell|show|any|some|which|me|describe|give|is|are|of|in|for|with)\b'
-    
     patterns = [
-        # Catch "KPR College", "PSG Institute", etc.
-        # Ensure it's not just "What campus" by checking the prefix
         r'\b([a-zA-Z0-9\s]+(?:college|university|institute|academy|school|arts and science|engineering college|medical college|group of institutions|campus|varsity))\b',
         r'\b(iit|nit|bits|vit|srm|psg|iim|aiims|jipmer)\s+([a-zA-Z]+)\b'
     ]
-    
+    stopwords = r'\b(what|how|the|tell|show|any|some|which|me|describe|give|is|are|of|in|for|with|about|where|when|can|you|if)\b'
     for pattern in patterns:
         matches = re.finditer(pattern, message_lower)
         for match_obj in matches:
-            match = match_obj.group(1).strip() if match_obj.groups() else match_obj.group(0).strip()
-            
-            # STOPWORD FILTER: If the match is just "what campus" or starts with "what", "is", etc.
-            # we strip the stopwords and see what remains.
+            match = match_obj.group(0).strip()
             clean_match = re.sub(stopwords, '', match).strip()
-            
-            # If after stripping common words, we have nothing or just a suffix, it's a false positive
-            suffixes = ['college', 'university', 'campus', 'institute', 'school']
-            if not clean_match or clean_match in suffixes:
-                continue
-                
-            return match
+            suffixes = ['college', 'university', 'campus', 'institute', 'school', 'varsity']
+            if not clean_match or clean_match in suffixes: continue
+            return clean_match
+    return None
 
     return None
 
@@ -194,26 +219,30 @@ def fetch_college_data(college_key: str, query: str) -> dict:
     if not url:
         print(f"🔍 Searching for official website of: {college_key}")
         try:
-            # Simple heuristic: Use clearbit or similar or just a google search redirection
-            # For this MVP, we use duckduckgo's !bang or a direct search query result
-            search_query = f"{college_key} official website"
-            # Note: In a production app, use a Search API. For this local logic, we simulate it
-            # by fetching the first result from a lightweight search or constructing a very likely URL
-            # For now, we'll try to find the domain using common patterns or fall back to a manual link
+            # We use a Google Search URL as a fallback for the UI to guide the user
+            # In a full-stack automated scrape, we would use a Search API (like Google Custom Search)
+            # For this MVP/Capstone, we simulate intelligent guessing and provide a direct search link
             
-            # Simulated dynamic discovery: if it ends in college/university, try to guess
-            clean_name = college_key.replace(" ", "")
+            clean_name = college_key.lower().replace(" ", "")
+            # Basic guessing heuristics for Indian colleges
             if "iit" in clean_name: url = f"https://www.{clean_name}.ac.in"
             elif "nit" in clean_name: url = f"https://www.{clean_name}.ac.in"
-            else:
-                # Fallback to a search link if we can't guess with high confidence
+            elif "university" in clean_name or "college" in clean_name:
+                # Try to construct a likely URL for common patterns
+                simplified = college_key.split()[0].lower()
+                url = f"https://www.{simplified}.ac.in"
+            
+            # Check if guessed URL is reachable (optional, keeping it simple for now)
+            # If we can't find a direct URL, we return a search link to the frontend
+            if not url:
                 search_url = f"https://www.google.com/search?q={college_key.replace(' ', '+')}+official+website"
                 return {
                     "url": search_url,
                     "title": college_key.title(),
-                    "text": f"I detected you're asking about **{college_key.title()}**. I couldn't find their official website in my database. Please [click here]({search_url}) to find it, or specify the full name!"
+                    "text": f"I couldn't find the direct official website for **{college_key.title()}** in my database. [Click here]({search_url}) to search for it, or provide a more specific name."
                 }
-        except Exception:
+        except Exception as e:
+            print(f"Search error: {e}")
             pass
 
     if not url:
@@ -419,32 +448,19 @@ def chat():
     if not user_message:
         return jsonify({"error": "Empty message"}), 400
 
-    # Step 1: Classify intent category
-    category = classify_category(user_message)
+    # Step 1 & 2: Intelligent Detection using AI (or fallback logic)
+    analysis = analyze_question_with_ai(user_message)
+    category = analysis.get("intent", "general")
+    detected_college = analysis.get("college")
 
-    # Step 2: Detect college name
-    new_detection = detect_college_name(user_message)
     current_session_college = session.get('active_college')
     
-    # Context Logic:
-    # 1. If we have a NEW detection that is IN OUR MAP, always use it (High confidence).
-    # 2. If no new detection, use session.
-    # 3. If new detection is weak (not in map) but session HAS a college, keep session.
-    # 4. If new detection is weak and session IS EMPTY, use new detection.
-    
+    # Context Logic
     college_key = None
-    if new_detection:
-        if new_detection in COLLEGE_URL_MAP:
-            college_key = new_detection
-            session['active_college'] = college_key
-            print(f"✅ High confidence detection: {college_key}")
-        elif current_session_college:
-            college_key = current_session_college
-            print(f"🔄 Keeping session context {college_key} over weak detection {new_detection}")
-        else:
-            college_key = new_detection
-            session['active_college'] = college_key
-            print(f"💾 Fresh weak detection: {college_key}")
+    if detected_college:
+        college_key = detected_college
+        session['active_college'] = college_key
+        print(f"🤖 AI Detected College: {college_key}")
     else:
         college_key = current_session_college
         if college_key:
