@@ -218,35 +218,37 @@ def fetch_college_data(college_key: str, query: str) -> dict:
     # Dynamic Discovery: If not in map, try to find the official website
     if not url:
         print(f"🔍 Searching for official website of: {college_key}")
-        try:
-            # We use a Google Search URL as a fallback for the UI to guide the user
-            # In a full-stack automated scrape, we would use a Search API (like Google Custom Search)
-            # For this MVP/Capstone, we simulate intelligent guessing and provide a direct search link
-            
-            clean_name = college_key.lower().replace(" ", "")
-            # Basic guessing heuristics for Indian colleges
-            if "iit" in clean_name: url = f"https://www.{clean_name}.ac.in"
-            elif "nit" in clean_name: url = f"https://www.{clean_name}.ac.in"
-            elif "university" in clean_name or "college" in clean_name:
-                # Try to construct a likely URL for common patterns
-                simplified = college_key.split()[0].lower()
-                url = f"https://www.{simplified}.ac.in"
-            
-            # Check if guessed URL is reachable (optional, keeping it simple for now)
-            # If we can't find a direct URL, we return a search link to the frontend
-            if not url:
-                search_url = f"https://www.google.com/search?q={college_key.replace(' ', '+')}+official+website"
-                return {
-                    "url": search_url,
-                    "title": college_key.title(),
-                    "text": f"I couldn't find the direct official website for **{college_key.title()}** in my database. [Click here]({search_url}) to search for it, or provide a more specific name."
-                }
-        except Exception as e:
-            print(f"Search error: {e}")
-            pass
+        
+        # Step A: Heuristic Guessing
+        clean_name = college_key.lower().replace(" ", "")
+        guesses = [
+            f"https://www.{clean_name}.ac.in",
+            f"https://www.{clean_name.replace('college', '')}.ac.in",
+            f"https://www.{clean_name}.edu.in",
+            f"https://{clean_name}.in"
+        ]
+        
+        for guess in guesses:
+            try:
+                check = requests.head(guess, timeout=3, allow_redirects=True, verify=False)
+                if check.status_code < 400:
+                    url = guess
+                    print(f"✅ Guessed valid URL: {url}")
+                    break
+            except: continue
+
+        # Step B: If still no URL, we return a search link and signal for AI Fallback
+        if not url:
+            search_url = f"https://www.google.com/search?q={college_key.replace(' ', '+')}+official+website"
+            return {
+                "url": search_url,
+                "title": college_key.title(),
+                "text": "NOT_FOUND", # Special keyword for AI Fallback
+                "search_link": search_url
+            }
 
     if not url:
-        return {"url": None, "title": college_key.title(), "text": "Website not found."}
+        return {"url": None, "title": college_key.title(), "text": "NOT_FOUND"}
 
     try:
         resp = requests.get(url, headers=headers, timeout=10, verify=False) # verify=False for some gov sites with bad SSL
@@ -474,26 +476,39 @@ def chat():
         college_info = fetch_college_data(college_key, user_message)
         web_source = college_info.get("url")
 
-        system_prompt = f"""You are Edu-Query, a helpful AI assistant for students seeking information about colleges and education in India.
+        # UNIVERSAL FALLBACK: If website data is missing or inaccessible
+        if college_info['text'] == "NOT_FOUND" or len(college_info['text']) < 100:
+            print(f"⚠️ Live data unavailable for {college_key}. Using AI Knowledge Fallback.")
+            
+            system_prompt = f"""You are Edu-Query, a helpful AI assistant for students.
+I could not find the live official website for {college_key.title()} right now.
 
+Instructions:
+- Answer the student's question based on your **General AI Knowledge** about {college_key.title()}.
+- IMPORTANT: Clearly state at the beginning (using an emoji) that you are using general information because the live site is currently inaccessible.
+- If you don't know the specific details (like current fees), provide typical estimates for similar colleges in that region and suggest they verify at the official link.
+- Keep response under 250 words.
+- Use a friendly tone with emojis 🎓.
+- Official Website: {college_info.get('search_link', 'Search Google for official info')}"""
+
+        else:
+            # Standard Scraping Prompt
+            system_prompt = f"""You are Edu-Query, a helpful AI assistant for students.
 The student is asking about: {college_key.title()}
 Detected query category: {category}
 Official website: {college_info['url']}
 
-Here is the extracted content from the college website (PRIORITIZE "OFFICIAL COURSE LIST" IF PRESENT):
+Extracted Live Content:
 \"\"\"
 {college_info['text']}
 \"\"\"
 
 Instructions:
 - Answer the student's question ONLY using the website data provided above.
-- IMPORTANT: If the text contains an "OFFICIAL COURSE LIST", you MUST use it for course-related questions.
-- Display ALL items in the course list using bullet points.
-- DO NOT provide any generic information outside of the provided context.
+- If the answer is in the data, provide it accurately.
+- If the data is missing the answer, say so and suggest they visit the official site.
 - Be concise, accurate, and professional.
-- If the website data doesn't contain the answer, say so honestly and suggest they contact the college directly.
-- Always mention the official website URL at the end.
-- Response MUST be under 250 words to ensure complete information is shown.
+- Response MUST be under 250 words.
 - Use a friendly tone with emojis where appropriate."""
 
     else:
@@ -517,7 +532,8 @@ Instructions:
         "response": ai_response,
         "category": category,
         "college": college_key.title() if college_key else None,
-        "web_source": web_source
+        "web_source": web_source,
+        "is_live": college_info['text'] != "NOT_FOUND" if college_info else False
     })
 
 

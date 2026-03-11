@@ -58,7 +58,8 @@ async function sendMessage() {
         data.response,
         data.category || "general",
         data.college,
-        data.web_source
+        data.web_source,
+        data.is_live
       );
     }
 
@@ -82,7 +83,7 @@ async function sendMessage() {
 //   college   : college name if detected (for AI bubbles)
 //   webSource : URL of fetched website (for AI bubbles)
 // ==============================================================
-function appendBubble(role, text, category = "general", college = null, webSource = null) {
+function appendBubble(role, text, category = "general", college = null, webSource = null, isLive = false) {
 
   // --- Outer message row ---
   const msgDiv = document.createElement("div");
@@ -108,12 +109,19 @@ function appendBubble(role, text, category = "general", college = null, webSourc
     catTag.textContent = categoryEmoji(category) + " " + capitalize(category);
     meta.appendChild(catTag);
 
-    // Web-fetched badge
-    if (webSource) {
-      const webBadge = document.createElement("span");
-      webBadge.className = "web-badge";
-      webBadge.textContent = "🌐 Live Data";
-      meta.appendChild(webBadge);
+    // Web-fetched vs AI Knowledge badge
+    if (role === "ai") {
+      const badge = document.createElement("span");
+      if (isLive) {
+        badge.className = "web-badge";
+        badge.textContent = "🌐 Live Data";
+      } else if (college) {
+        badge.className = "web-badge fallback"; // Add a custom class for different styling
+        badge.style.background = "rgba(255, 152, 0, 0.1)"; // Subtle orange for fallback
+        badge.style.color = "#ff9800";
+        badge.textContent = "💡 General Knowledge";
+      }
+      if (badge.textContent) meta.appendChild(badge);
     }
 
     bubbleWrap.appendChild(meta);
