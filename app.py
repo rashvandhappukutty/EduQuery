@@ -458,7 +458,7 @@ def chat():
     # Context Logic
     college_key = None
     if detected_college:
-        college_key = detected_college
+        college_key = detected_college.lower().strip()
         session['active_college'] = college_key
         print(f"🤖 AI Detected College: {college_key}")
     else:
